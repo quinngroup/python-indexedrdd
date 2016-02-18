@@ -3,6 +3,19 @@ from itertools import groupby
 from pyspark import SparkContext
 
 
+def groupByExample():
+	things = [("animal", "bear"), ("animal", "duck"), ("plant", "cactus"), ("vehicle", "speed boat"), ("vehicle", "school bus")]
+	for key, group in groupby(things, lambda x: x[0]):
+			print "%s : %s." % ( key, group)
+    
+def getFromIndex(keyList):
+	ksByPartition = {}
+	for k, v in groupby(keyList, lambda x: x[1]):
+		#For every key in the get request, find its respective partition
+		#ksByPartition = ks.groupBy(k => partitioner.get.getPartition(k))
+		print "%s : %s." % (k, v)
+	
+
 def makeMap(item):
 	mapObject = ((k,v) for (k,v) in item)
 	return (mapObject)
@@ -14,7 +27,7 @@ def updatable(elems):
 	return updatable(elems,lambda id, a: a,lambda id, a, b: b)
 
 def updatable(elems, z = lambda K, U : V, f = lambda K, V, U : V):
-	elemsPartitioned=elems.partitionBy(2)
+	elemsPartitioned=elems.partitionBy(5)
 	partitions = elemsPartitioned.mapPartitions(makeMap)
 	return (partitions)
     
@@ -34,6 +47,11 @@ def main():
 	print("Elements Printed Here*******************************************************")
 	print(rdd2.take(5))
 	print("Elements Print Ends*******************************************************")
+
+	print("Group By Example*******************************************************")
+	groupByExample()
+	lis1=[(1,1), (2,2), (3,3)]
+	getFromIndex(lis1)
 
 if __name__ == "__main__":
 	main()
