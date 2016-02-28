@@ -1,0 +1,45 @@
+Issue with put:
+
+1. invoke put() and pass to it a Map of (key,value) pairs
+2. Convert this Map(key,value) pairs to a new RDD, according to the same properties 
+of partitioner of the original RDD
+3. Zip the partitions of old RDD and new RDD together
+
+
+Existing(scala) Code:
+def multiput[U: ClassTag](kvs: Map[K, U], z: (K, U) => V, f: (K, V, U) => V): IndexedRDD[K, V] = {
+    #Corresponds to Step 2
+    val updates = context.parallelize(kvs.toSeq).partitionBy(partitioner.get)
+    
+    #Corresponds to Step 3
+    zipPartitionsWithOther(updates)(new MultiputZipper(z, f))
+}
+
+private def zipPartitionsWithOther[V2: ClassTag, V3: ClassTag](other: RDD[(K, V2)])(f: OtherZipPartitionsFunction[V2,V3]): IndexedRDD[K, V3] = {
+    val partitioned = other.partitionBy(partitioner.get)
+    val newPartitionsRDD = partitionsRDD.zipPartitions(partitioned, true)(f)
+    new IndexedRDD(newPartitionsRDD)
+}
+
+private type OtherZipPartitionsFunction[V2, V3] = Function2[Iterator[IndexedRDDPartition[K, V]], Iterator[(K, V2)], Iterator[IndexedRDDPartition[K, V3]]]
+
+private class MultiputZipper[U](z: (K, U) => V, f: (K, V, U) => V)
+  extends OtherZipPartitionsFunction[U, V] with Serializable {
+    
+    def apply(thisIter: Iterator[IndexedRDDPartition[K, V]], otherIter: Iterator[(K, U)]): Iterator[IndexedRDDPartition[K, V]] = {
+      val thisPart = thisIter.next()
+      Iterator(thisPart.multiput(otherIter, z, f))
+    }
+}
+
+
+The main issue is PySpark(1.6.0) currently, doesn't have implementation of
+zipPartitions(). This commit: https://github.com/apache/spark/pull/10550/commits is about adding
+zipPartitions to PySpark. But, not sure whether it is accepted and available to use, since the commit is pretty recent one.
+
+So the option is to: Implement that method myself, but not sure about its repurcurssions.
+Try using join: not sure of this too.
+
+
+
+
