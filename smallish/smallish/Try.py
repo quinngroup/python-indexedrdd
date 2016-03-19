@@ -4,20 +4,19 @@ from IndexedRDD import IndexedRDD
 
 def main():
 
-	sc = SparkContext("local", "Simple App")
-
-	#Create an RDD of key-value pairs with Long keys.
-	rdd1 = sc.parallelize(range(6)).map(lambda x: (x, x*x))
+	rdd1 = IndexedRDD.initialize_method()
 	rdd2 = IndexedRDD(rdd1)
 	print("Class initialization *******************************************************")
 	print(type(rdd2))
+	print(rdd2.collect())
+	print(rdd2.getNumPartitions())
 	print("Class initialization *******************************************************")
 
 
-	"""print("GET1 Output *******************************************************")
+	print("GET1 Output *******************************************************")
 	list1=[(0,3)]
-	print(getFromIndex(rdd2,list1))
-	print("GET1 Output *******************************************************")"""
+	print(rdd2.getFromIndex(list1))
+	print("GET1 Output *******************************************************")
 
 
 """	rdd3 = sc.parallelize(range(6,7)).map(lambda x:(x,x*x))
