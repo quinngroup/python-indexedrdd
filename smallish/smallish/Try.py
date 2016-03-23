@@ -19,14 +19,14 @@ def main():
 	print("GET1 Output *******************************************************")
 
 
-"""	rdd3 = sc.parallelize(range(6,7)).map(lambda x:(x,x*x))
-	rdd4 = putInIndex(rdd2,rdd3).cache()
+	rdd3 = IndexedRDD.initialize_method2()
+	rdd4 = rdd2.putInIndex(rdd3).cache()
 	
 	print("GET Output *******************************************************")
 	print(rdd4.collect())
 	print(rdd4.getNumPartitions())
-	print(getFromIndex(rdd4,[(0,5)]))
-	print("GET Output *******************************************************")"""
+	print(rdd4.getFromIndex([(0,5)]))
+	print("GET Output *******************************************************")
 
 	
 
