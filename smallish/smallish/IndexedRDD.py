@@ -23,8 +23,13 @@ class IndexedRDD(RDD):
   def initialize_method2():
     rdd2 = sc.parallelize(range(6,8)).map(lambda x:(x,x*x))
     return IndexedRDD.updatable(rdd2)
-    
 
+  @staticmethod
+  def initialize_method3(elements):
+    rddObj = sc.parallelize((key,value) for (key,value) in elements)
+    return IndexedRDD.updatable(rddObj)
+  
+#-----------------------------------------------------------------------------
   def __init__(self, elements):
     self.ctx = elements.ctx
     self.elements = elements
@@ -59,9 +64,21 @@ class IndexedRDD(RDD):
     return IndexedRDD.nonNegativeMod(hash(key),2)  
   
   @staticmethod
-  def partitionFunc(d):
-    return d
+  def partitionFunc(keyList):
+    def innerFunc(d):
+      for k,v in keyList:
+        d1 = {(value) for (key, value) in d if key == v}
+      return (d1)
+    return innerFunc
 
+
+  @staticmethod
+  def partitionFunc2(keyList):
+    def innerFunc(d):
+      for k,v in keyList:
+        d = {(key, value) for (key, value) in d if key != v}
+      return (d)
+    return innerFunc
 #------------------------ Functionalities ---------------------------------------
 
   def getFromIndex(self,keyList):
@@ -71,16 +88,32 @@ class IndexedRDD(RDD):
         ksByPartition=self.getPartition(v)
 
     partitions = ksByPartition
-    results = sc.runJob(self, IndexedRDD.partitionFunc, [1], True)
-  
-    allResults = []
-    for k,v in keyList:
-      allResults.append(dict(results).get(v))
-    
-    return allResults  
+    results = sc.runJob(self, IndexedRDD.partitionFunc(keyList), [1], True)
+    return results  
 
   def putInIndex(self,rddY):
-    rddZ1 = IndexedRDD.updatable(rddY)
+    rddZ1 = IndexedRDD.updatable(rddY) 
     rddZ2 = self.elements.union(rddZ1)
     return IndexedRDD(rddZ2)
- 
+
+  def deleteFromIndex(self,keyList):
+    results = sc.runJob(self, IndexedRDD.partitionFunc2(keyList))
+    rddObj = IndexedRDD.initialize_method3(results)
+    return IndexedRDD(rddObj)
+
+  def join(self,other,f = lambda K, V, U : V): 
+    #Assume all the partitioning properties are same:
+    this.zipIndexedRDDPartitions(other, JoinZipper(f))
+  
+  #def zipIndexedRDDPartitions(self,other, joinZipperObj):
+
+#------------------------ Private Custom Classes ---------------------------------------
+class JoinZipper(object):
+#[U: ClassTag](f: (K, V, U) => V) extends ZipPartitionsFunction[U, V] with Serializable {
+    
+    def __init__(thisIter, otherIter): 
+      thisPart = thisIter.next()
+      otherPart = otherIter.next()
+      return Iterator(thisPart.join(otherPart)(f))
+    
+  

@@ -28,6 +28,14 @@ def main():
 	print(rdd4.getFromIndex([(0,5)]))
 	print("GET Output *******************************************************")
 
+
+	print("DEL Output *******************************************************")
+	rdd5 = rdd4.deleteFromIndex([(0,5)])
+	print(rdd5.collect())
+	print(rdd5.getNumPartitions())
+	print(rdd5.getFromIndex([(0,5)]))
+	print("DEL Output *******************************************************")
+
 	
 
 if __name__ == "__main__":
