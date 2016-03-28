@@ -4,9 +4,10 @@ from IndexedRDD import IndexedRDD
 
 def main():
 
+
+	print("Class initialization *******************************************************")
 	rdd1 = IndexedRDD.initialize_method()
 	rdd2 = IndexedRDD(rdd1)
-	print("Class initialization *******************************************************")
 	print(type(rdd2))
 	print(rdd2.collect())
 	print(rdd2.getNumPartitions())
@@ -18,15 +19,19 @@ def main():
 	print(rdd2.getFromIndex(list1))
 	print("GET1 Output *******************************************************")
 
+	print("Filter Output *******************************************************")
+	rdd3 = rdd2.filter(lambda (x):(x[0]/1==1))
+	print(rdd3.collect())
+	print("Filter Output *******************************************************")
 
+	
+	print("PUT Output *******************************************************")
 	rdd3 = IndexedRDD.initialize_method2()
 	rdd4 = rdd2.putInIndex(rdd3).cache()
-	
-	print("GET Output *******************************************************")
 	print(rdd4.collect())
 	print(rdd4.getNumPartitions())
 	print(rdd4.getFromIndex([(0,5)]))
-	print("GET Output *******************************************************")
+	print("PUT Output *******************************************************")
 
 
 	print("DEL Output *******************************************************")

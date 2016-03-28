@@ -28,24 +28,25 @@ class IndexedRDD(RDD):
   def initialize_method3(elements):
     rddObj = sc.parallelize((key,value) for (key,value) in elements)
     return IndexedRDD.updatable(rddObj)
-  
+ 
 #-----------------------------------------------------------------------------
   def __init__(self, elements):
     self.ctx = elements.ctx
     self.elements = elements
     self._jrdd_deserializer = self.ctx.serializer
     self._jrdd = elements._jrdd
+    
   
   @staticmethod
   def updatable(elements): 
-    return IndexedRDD.updatable(elements,lambda id, a: a,lambda id, a, b: b)
+    return IndexedRDD.updatable(self,lambda id, a: a,lambda id, a, b: b)
 
   @staticmethod  
   def updatable(elements, z = lambda K, U : V, f = lambda K, V, U : V):
     elemsPartitioned = elements.partitionBy(2)
     partitions = elemsPartitioned.mapPartitionsWithIndex((IndexedRDD.makeMap),True)
     return partitions
-
+    
 #------------------------ Static Methods ---------------------------------------
 
   @staticmethod   
@@ -88,7 +89,7 @@ class IndexedRDD(RDD):
         ksByPartition=self.getPartition(v)
 
     partitions = ksByPartition
-    results = sc.runJob(self, IndexedRDD.partitionFunc(keyList), [1], True)
+    results = self.ctx.runJob(self, IndexedRDD.partitionFunc(keyList), [1], True)
     return results  
 
   def putInIndex(self,rddY):
@@ -101,6 +102,14 @@ class IndexedRDD(RDD):
     rddObj = IndexedRDD.initialize_method3(results)
     return IndexedRDD(rddObj)
 
+  def filter(self,pred):   
+    return self.mapIndexedRDDPartitions(pred)
+  
+  def mapIndexedRDDPartitions(self,f):
+    newPartitionsRDD = self.elements.mapPartitions(lambda d: filter(f,d), True)
+    return IndexedRDD(newPartitionsRDD)
+  
+  
   def join(self,other,f = lambda K, V, U : V): 
     #Assume all the partitioning properties are same:
     this.zipIndexedRDDPartitions(other, JoinZipper(f))
