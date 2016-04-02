@@ -41,6 +41,19 @@ def main():
 	print(rdd5.getFromIndex([(0,5)]))
 	print("DEL Output *******************************************************")
 
+
+	print("Inner Join *******************************************************")
+	rdd6 = IndexedRDD.initialize_method2()
+	rdd7 = rdd5.innerJoin(rdd6,lambda (id,(a,b)):(id,(b,b)))
+	print(rdd7.collect())
+	print(rdd7.getNumPartitions())
+	list1=[(0,7)]
+	print(rdd7.getFromIndex(list1))
+	
+	#print(rdd5.getFromIndex([(0,5)]))
+	print("Inner Join Output *******************************************************")
+
+
 	
 
 if __name__ == "__main__":

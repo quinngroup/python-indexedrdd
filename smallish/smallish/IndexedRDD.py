@@ -16,12 +16,12 @@ class IndexedRDD(RDD):
 
   @staticmethod
   def initialize_method():
-    rdd1 = sc.parallelize(range(6)).map(lambda x: (x, x*x))
+    rdd1 = sc.parallelize(range(8)).map(lambda x: (x, x*x))
     return IndexedRDD.updatable(rdd1)
 
   @staticmethod
   def initialize_method2():
-    rdd2 = sc.parallelize(range(6,8)).map(lambda x:(x,x*x))
+    rdd2 = sc.parallelize(range(4,8)).map(lambda x:(x,x*x*x))
     return IndexedRDD.updatable(rdd2)
 
   @staticmethod
@@ -80,6 +80,15 @@ class IndexedRDD(RDD):
         d = {(key, value) for (key, value) in d if key != v}
       return (d)
     return innerFunc
+
+  @staticmethod
+  def partitionFuncX(f):
+    def innerFunc(d):
+      d = {f(i) for (i) in d }
+      return d
+    return innerFunc
+
+
 #------------------------ Functionalities ---------------------------------------
 
   def getFromIndex(self,keyList):
@@ -109,20 +118,12 @@ class IndexedRDD(RDD):
     newPartitionsRDD = self.elements.mapPartitions(lambda d: filter(f,d), True)
     return IndexedRDD(newPartitionsRDD)
   
+  def innerJoin(self,other,f): 
+    rddX=self.elements.join(other)
+    newPartitionsRDD = rddX.mapPartitions(IndexedRDD.partitionFuncX(f), True)
+    return IndexedRDD(newPartitionsRDD)
   
-  def join(self,other,f = lambda K, V, U : V): 
-    #Assume all the partitioning properties are same:
-    this.zipIndexedRDDPartitions(other, JoinZipper(f))
-  
-  #def zipIndexedRDDPartitions(self,other, joinZipperObj):
-
 #------------------------ Private Custom Classes ---------------------------------------
-class JoinZipper(object):
-#[U: ClassTag](f: (K, V, U) => V) extends ZipPartitionsFunction[U, V] with Serializable {
-    
-    def __init__(thisIter, otherIter): 
-      thisPart = thisIter.next()
-      otherPart = otherIter.next()
-      return Iterator(thisPart.join(otherPart)(f))
+
     
   
