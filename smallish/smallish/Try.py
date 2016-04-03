@@ -34,24 +34,30 @@ def main():
 	print("PUT Output *******************************************************")
 
 
-	print("DEL Output *******************************************************")
+	"""print("DEL Output *******************************************************")
 	rdd5 = rdd4.deleteFromIndex([(0,5)])
 	print(rdd5.collect())
 	print(rdd5.getNumPartitions())
 	print(rdd5.getFromIndex([(0,5)]))
-	print("DEL Output *******************************************************")
+	print("DEL Output *******************************************************")"""
 
 
-	print("Inner Join *******************************************************")
+	print("Join Output *******************************************************")
 	rdd6 = IndexedRDD.initialize_method2()
-	rdd7 = rdd5.innerJoin(rdd6,lambda (id,(a,b)):(id,(b,b)))
+	print("RDD4 *******************************************************")
+	print(rdd2.collect())
+	print("RDD4 *******************************************************")
+	print("RDD6 *******************************************************")
+	print(rdd6.collect())
+	print("RDD6 *******************************************************")
+	rdd7 = rdd2.fullOuterJoin(rdd6,lambda (id,(a,b)):(id,(a,b)))
 	print(rdd7.collect())
 	print(rdd7.getNumPartitions())
 	list1=[(0,7)]
 	print(rdd7.getFromIndex(list1))
 	
 	#print(rdd5.getFromIndex([(0,5)]))
-	print("Inner Join Output *******************************************************")
+	print("Join Output *******************************************************")
 
 
 	

@@ -21,7 +21,7 @@ class IndexedRDD(RDD):
 
   @staticmethod
   def initialize_method2():
-    rdd2 = sc.parallelize(range(4,8)).map(lambda x:(x,x*x*x))
+    rdd2 = sc.parallelize(range(4,7)).map(lambda x:(x,x*x*x))
     return IndexedRDD.updatable(rdd2)
 
   @staticmethod
@@ -92,13 +92,11 @@ class IndexedRDD(RDD):
 #------------------------ Functionalities ---------------------------------------
 
   def getFromIndex(self,keyList):
-    ksByPartition=[]
     partitions=[]
     for k,v in keyList:
-        ksByPartition=self.getPartition(v)
+        partitions.append(self.getPartition(v))
 
-    partitions = ksByPartition
-    results = self.ctx.runJob(self, IndexedRDD.partitionFunc(keyList), [1], True)
+    results = self.ctx.runJob(self, IndexedRDD.partitionFunc(keyList), partitions, True)
     return results  
 
   def putInIndex(self,rddY):
@@ -120,6 +118,16 @@ class IndexedRDD(RDD):
   
   def innerJoin(self,other,f): 
     rddX=self.elements.join(other)
+    newPartitionsRDD = rddX.mapPartitions(IndexedRDD.partitionFuncX(f), True)
+    return IndexedRDD(newPartitionsRDD)
+  
+  def leftJoin(self,other,f): 
+    rddX=self.elements.leftOuterJoin(other)
+    newPartitionsRDD = rddX.mapPartitions(IndexedRDD.partitionFuncX(f), True)
+    return IndexedRDD(newPartitionsRDD)
+  
+  def fullOuterJoin(self,other,f): 
+    rddX=self.elements.fullOuterJoin(other)
     newPartitionsRDD = rddX.mapPartitions(IndexedRDD.partitionFuncX(f), True)
     return IndexedRDD(newPartitionsRDD)
   
