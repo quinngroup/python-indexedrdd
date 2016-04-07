@@ -26,7 +26,7 @@ def main():
 	rdd_4 = rdd_2.putInIndex(list1).cache()
 	print(rdd_4.collect())
 	print(rdd_4.getNumPartitions())
-	print(rdd_4.getFromIndex([(0,7)]))
+	print(rdd_4.getFromIndex([(0,6)]))
 	print("PUT Output *******************************************************")
 
 

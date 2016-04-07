@@ -35,7 +35,8 @@ class IndexedRDD(RDD):
     otherKV = self.indexedRDD.ctx.parallelize(other)
     otherRDD = IndexedRDD.updatable(otherKV) 
     results = self.indexedRDD.union(otherRDD)
-    return IndexedRDD(results)
+    results1 = results.map(lambda (x,y):(x,y)).reduceByKey(lambda a,b:(b))
+    return IndexedRDD(results1)
 
   def deleteFromIndex(self,keyList):
     delObj = self.indexedRDD.ctx.runJob(self, IndexedRDD.delFromPartitionFunc(keyList))
@@ -98,6 +99,15 @@ class IndexedRDD(RDD):
         d1 = {(value) for (key, value) in d if key == v}
       return (d1)
     return innerFunc
+
+  @staticmethod
+  def putPartitionFunc(other):
+    def innerFunc(d):
+      for k,v in d:
+        d = {(key,v) for (key, value) in d if key == k}
+      return (d)
+    return innerFunc
+
 
   @staticmethod
   def delFromPartitionFunc(keyList):
