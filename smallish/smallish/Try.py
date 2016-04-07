@@ -4,59 +4,59 @@ from IndexedRDD import IndexedRDD
 
 def main():
 
-
+	sc = SparkContext("local", "Simple App")
 	print("Class initialization *******************************************************")
-	rdd1 = IndexedRDD.initialize_method()
-	rdd2 = IndexedRDD(rdd1)
-	print(type(rdd2))
-	print(rdd2.collect())
-	print(rdd2.getNumPartitions())
+	rdd_1 = sc.parallelize(range(9)).map(lambda x: (x, x*x))
+	rdd_11 = IndexedRDD.updatable(rdd_1)
+	rdd_2 = IndexedRDD(rdd_11)
+	print(type(rdd_2))
+	print(rdd_2.collect())
+	print(rdd_2.getNumPartitions())
 	print("Class initialization *******************************************************")
 
 
 	print("GET1 Output *******************************************************")
 	list1=[(0,3)]
-	print(rdd2.getFromIndex(list1))
+	print(rdd_2.getFromIndex(list1))
 	print("GET1 Output *******************************************************")
 
+	
+	"""print("PUT Output *******************************************************")
+	#rdd_3 = sc.parallelize(range(4,7)).map(lambda x:(x,x*x*x))
+	list1=[(4,64),(5,125)]
+	rdd_4 = rdd_2.putInIndex(rdd_3).cache()
+	print(rdd_4.collect())
+	print(rdd_4.getNumPartitions())
+	print(rdd_4.getFromIndex([(0,5)]))
+	print("PUT Output *******************************************************")"""
+
+
+	print("DEL Output *******************************************************")
+	rdd_5 = rdd_2.deleteFromIndex([(0,8)])
+	print(rdd_5.collect())
+	print(rdd_5.getNumPartitions())
+	print(rdd_5.getFromIndex([(0,8)]))
+	print("DEL Output *******************************************************")
+
 	print("Filter Output *******************************************************")
-	rdd3 = rdd2.filter(lambda (x):(x[0]/1==1))
-	print(rdd3.collect())
+	rdd_6 = rdd_2.filter(lambda (x):(x[0]%2==0))
+	print(rdd_6.collect())
 	print("Filter Output *******************************************************")
 
 	
-	print("PUT Output *******************************************************")
-	rdd3 = IndexedRDD.initialize_method2()
-	rdd4 = rdd2.putInIndex(rdd3).cache()
-	print(rdd4.collect())
-	print(rdd4.getNumPartitions())
-	print(rdd4.getFromIndex([(0,5)]))
-	print("PUT Output *******************************************************")
-
-
-	"""print("DEL Output *******************************************************")
-	rdd5 = rdd4.deleteFromIndex([(0,5)])
-	print(rdd5.collect())
-	print(rdd5.getNumPartitions())
-	print(rdd5.getFromIndex([(0,5)]))
-	print("DEL Output *******************************************************")"""
-
 
 	print("Join Output *******************************************************")
-	rdd6 = IndexedRDD.initialize_method2()
-	print("RDD4 *******************************************************")
-	print(rdd2.collect())
-	print("RDD4 *******************************************************")
-	print("RDD6 *******************************************************")
-	print(rdd6.collect())
-	print("RDD6 *******************************************************")
-	rdd7 = rdd2.fullOuterJoin(rdd6,lambda (id,(a,b)):(id,(a,b)))
-	print(rdd7.collect())
-	print(rdd7.getNumPartitions())
-	list1=[(0,7)]
-	print(rdd7.getFromIndex(list1))
-	
-	#print(rdd5.getFromIndex([(0,5)]))
+	rdd_7 = sc.parallelize(range(4,8)).map(lambda x:(x,x*x*x))
+	rdd_8 = IndexedRDD.updatable(rdd_7)
+	print("RDD2 *******************************************************")
+	print(rdd_2.collect())
+	print(rdd_8.collect())
+	print("RDD8 *******************************************************")
+	rdd_9 = rdd_2.fullOuterJoin(rdd_8,lambda (id,(a,b)):(id,(b,b)))
+	print(rdd_9.collect())
+	print(rdd_9.getNumPartitions())
+	list1=[(0,4)]
+	print(rdd_9.getFromIndex(list1))
 	print("Join Output *******************************************************")
 
 

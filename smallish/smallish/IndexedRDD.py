@@ -7,19 +7,13 @@ from pyspark.serializers import NoOpSerializer, CartesianDeserializer, \
     PickleSerializer, pack_long, AutoBatchedSerializer 
 import numpy as np
 
-sc = SparkContext("local", "Simple App")
+
 
 
 class IndexedRDD(RDD):
 
 #------------------------ Initialization Methods -----------------------------
-
-  @staticmethod
-  def initialize_method():
-    rdd1 = sc.parallelize(range(8)).map(lambda x: (x, x*x))
-    return IndexedRDD.updatable(rdd1)
-
-  @staticmethod
+  """@staticmethod
   def initialize_method2():
     rdd2 = sc.parallelize(range(4,7)).map(lambda x:(x,x*x*x))
     return IndexedRDD.updatable(rdd2)
@@ -27,27 +21,70 @@ class IndexedRDD(RDD):
   @staticmethod
   def initialize_method3(elements):
     rddObj = sc.parallelize((key,value) for (key,value) in elements)
-    return IndexedRDD.updatable(rddObj)
+    return IndexedRDD.updatable(rddObj)"""
  
-#-----------------------------------------------------------------------------
-  def __init__(self, elements):
-    self.ctx = elements.ctx
-    self.elements = elements
-    self._jrdd_deserializer = self.ctx.serializer
-    self._jrdd = elements._jrdd
-    
+#----------------------- Intialization Methods ---------------------------------
+  #def __new__(self, rddObj):
+  #self.indexedRDD = tempRDD
   
+  def __init__(self,rddObj):
+    self.indexedRDD = rddObj
+    super(IndexedRDD, self).__init__(self.indexedRDD._jrdd, self.indexedRDD.ctx)
+    
+
+#------------------------ Functionalities ---------------------------------------
+
+  def getFromIndex(self,keyList):
+    partitions=[]
+    for k,v in keyList:
+        partitions.append(self.getPartition(v))
+
+    results = self.indexedRDD.ctx.runJob(self, IndexedRDD.getPartitionFunc(keyList), partitions, True)
+    return results  
+
+  def putInIndex(self,other):
+    otherKV = IndexedRDD.updatable(other) 
+    results = self.indexedRDD.union(otherKV)
+    return IndexedRDD(results)
+
+  def deleteFromIndex(self,keyList):
+    delObj = self.indexedRDD.ctx.runJob(self, IndexedRDD.delFromPartitionFunc(keyList))
+    results = self.indexedRDD.ctx.parallelize((key,value) for (key,value) in delObj)
+    return IndexedRDD(IndexedRDD.updatable(results))
+
+  def filter(self,pred):   
+    return self.mapIndexedRDDPartitions(pred)
+  
+  def mapIndexedRDDPartitions(self,f):
+    newPartitionsRDD = self.indexedRDD.mapPartitions(lambda d: filter(f,d), True)
+    return IndexedRDD(newPartitionsRDD)
+  
+  def innerJoin(self,other,f): 
+    rddX=self.indexedRDD.join(other)
+    newPartitionsRDD = rddX.mapPartitions(IndexedRDD.filterOnPartitionFunc(f), True)
+    return IndexedRDD(newPartitionsRDD)
+  
+  def leftJoin(self,other,f): 
+    rddX=self.indexedRDD.leftOuterJoin(other)
+    newPartitionsRDD = rddX.mapPartitions(IndexedRDD.filterOnPartitionFunc(f), True)
+    return IndexedRDD(newPartitionsRDD)
+  
+  def fullOuterJoin(self,other,f): 
+    rddX=self.indexedRDD.fullOuterJoin(other)
+    newPartitionsRDD = rddX.mapPartitions(IndexedRDD.filterOnPartitionFunc(f), True)
+    return IndexedRDD(newPartitionsRDD)
+  
+#------------------------ Static Methods ---------------------------------------
+
   @staticmethod
-  def updatable(elements): 
+  def updatable(rddObj): 
     return IndexedRDD.updatable(self,lambda id, a: a,lambda id, a, b: b)
 
   @staticmethod  
-  def updatable(elements, z = lambda K, U : V, f = lambda K, V, U : V):
-    elemsPartitioned = elements.partitionBy(2)
+  def updatable(rddObj, z = lambda K, U : V, f = lambda K, V, U : V):
+    elemsPartitioned = rddObj.partitionBy(2)
     partitions = elemsPartitioned.mapPartitionsWithIndex((IndexedRDD.makeMap),True)
-    return partitions
-    
-#------------------------ Static Methods ---------------------------------------
+    return (partitions)
 
   @staticmethod   
   def makeMap(index,kv):
@@ -65,16 +102,15 @@ class IndexedRDD(RDD):
     return IndexedRDD.nonNegativeMod(hash(key),2)  
   
   @staticmethod
-  def partitionFunc(keyList):
+  def getPartitionFunc(keyList):
     def innerFunc(d):
       for k,v in keyList:
         d1 = {(value) for (key, value) in d if key == v}
       return (d1)
     return innerFunc
 
-
   @staticmethod
-  def partitionFunc2(keyList):
+  def delFromPartitionFunc(keyList):
     def innerFunc(d):
       for k,v in keyList:
         d = {(key, value) for (key, value) in d if key != v}
@@ -82,56 +118,12 @@ class IndexedRDD(RDD):
     return innerFunc
 
   @staticmethod
-  def partitionFuncX(f):
+  def filterOnPartitionFunc(f):
     def innerFunc(d):
       d = {f(i) for (i) in d }
       return d
     return innerFunc
 
-
-#------------------------ Functionalities ---------------------------------------
-
-  def getFromIndex(self,keyList):
-    partitions=[]
-    for k,v in keyList:
-        partitions.append(self.getPartition(v))
-
-    results = self.ctx.runJob(self, IndexedRDD.partitionFunc(keyList), partitions, True)
-    return results  
-
-  def putInIndex(self,rddY):
-    rddZ1 = IndexedRDD.updatable(rddY) 
-    rddZ2 = self.elements.union(rddZ1)
-    return IndexedRDD(rddZ2)
-
-  def deleteFromIndex(self,keyList):
-    results = sc.runJob(self, IndexedRDD.partitionFunc2(keyList))
-    rddObj = IndexedRDD.initialize_method3(results)
-    return IndexedRDD(rddObj)
-
-  def filter(self,pred):   
-    return self.mapIndexedRDDPartitions(pred)
-  
-  def mapIndexedRDDPartitions(self,f):
-    newPartitionsRDD = self.elements.mapPartitions(lambda d: filter(f,d), True)
-    return IndexedRDD(newPartitionsRDD)
-  
-  def innerJoin(self,other,f): 
-    rddX=self.elements.join(other)
-    newPartitionsRDD = rddX.mapPartitions(IndexedRDD.partitionFuncX(f), True)
-    return IndexedRDD(newPartitionsRDD)
-  
-  def leftJoin(self,other,f): 
-    rddX=self.elements.leftOuterJoin(other)
-    newPartitionsRDD = rddX.mapPartitions(IndexedRDD.partitionFuncX(f), True)
-    return IndexedRDD(newPartitionsRDD)
-  
-  def fullOuterJoin(self,other,f): 
-    rddX=self.elements.fullOuterJoin(other)
-    newPartitionsRDD = rddX.mapPartitions(IndexedRDD.partitionFuncX(f), True)
-    return IndexedRDD(newPartitionsRDD)
-  
-#------------------------ Private Custom Classes ---------------------------------------
 
     
   
