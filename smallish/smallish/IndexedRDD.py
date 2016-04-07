@@ -11,17 +11,6 @@ import numpy as np
 
 
 class IndexedRDD(RDD):
-
-#------------------------ Initialization Methods -----------------------------
-  """@staticmethod
-  def initialize_method2():
-    rdd2 = sc.parallelize(range(4,7)).map(lambda x:(x,x*x*x))
-    return IndexedRDD.updatable(rdd2)
-
-  @staticmethod
-  def initialize_method3(elements):
-    rddObj = sc.parallelize((key,value) for (key,value) in elements)
-    return IndexedRDD.updatable(rddObj)"""
  
 #----------------------- Intialization Methods ---------------------------------
   #def __new__(self, rddObj):
