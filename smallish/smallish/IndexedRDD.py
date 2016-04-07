@@ -32,8 +32,9 @@ class IndexedRDD(RDD):
     return results  
 
   def putInIndex(self,other):
-    otherKV = IndexedRDD.updatable(other) 
-    results = self.indexedRDD.union(otherKV)
+    otherKV = self.indexedRDD.ctx.parallelize(other)
+    otherRDD = IndexedRDD.updatable(otherKV) 
+    results = self.indexedRDD.union(otherRDD)
     return IndexedRDD(results)
 
   def deleteFromIndex(self,keyList):

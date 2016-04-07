@@ -6,7 +6,7 @@ def main():
 
 	sc = SparkContext("local", "Simple App")
 	print("Class initialization *******************************************************")
-	rdd_1 = sc.parallelize(range(9)).map(lambda x: (x, x*x))
+	rdd_1 = sc.parallelize(range(7)).map(lambda x: (x, x*x))
 	rdd_11 = IndexedRDD.updatable(rdd_1)
 	rdd_2 = IndexedRDD(rdd_11)
 	print(type(rdd_2))
@@ -21,17 +21,16 @@ def main():
 	print("GET1 Output *******************************************************")
 
 	
-	"""print("PUT Output *******************************************************")
-	#rdd_3 = sc.parallelize(range(4,7)).map(lambda x:(x,x*x*x))
-	list1=[(4,64),(5,125)]
-	rdd_4 = rdd_2.putInIndex(rdd_3).cache()
+	print("PUT Output *******************************************************")
+	list1=[(7,49)]
+	rdd_4 = rdd_2.putInIndex(list1).cache()
 	print(rdd_4.collect())
 	print(rdd_4.getNumPartitions())
-	print(rdd_4.getFromIndex([(0,5)]))
-	print("PUT Output *******************************************************")"""
+	print(rdd_4.getFromIndex([(0,7)]))
+	print("PUT Output *******************************************************")
 
 
-	print("DEL Output *******************************************************")
+	"""print("DEL Output *******************************************************")
 	rdd_5 = rdd_2.deleteFromIndex([(0,8)])
 	print(rdd_5.collect())
 	print(rdd_5.getNumPartitions())
@@ -57,7 +56,7 @@ def main():
 	print(rdd_9.getNumPartitions())
 	list1=[(0,4)]
 	print(rdd_9.getFromIndex(list1))
-	print("Join Output *******************************************************")
+	print("Join Output *******************************************************")"""
 
 
 	
