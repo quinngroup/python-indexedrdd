@@ -31,12 +31,20 @@ class IndexedRDD(RDD):
     results = self.indexedRDD.ctx.runJob(self, IndexedRDD.getPartitionFunc(keyList), partitions, True)
     return results  
 
-  def putInIndex(self,other):
-    otherKV = self.indexedRDD.ctx.parallelize(other)
-    otherRDD = IndexedRDD.updatable(otherKV) 
-    results = self.indexedRDD.union(otherRDD)
-    results1 = results.map(lambda (x,y):(x,y)).reduceByKey(lambda a,b:(b))
-    return IndexedRDD(results1)
+  def putInIndex(self,keyList):
+    partitionID=(self.getPartition(keyList[0]))
+
+    results = self.indexedRDD.mapPartitionsWithIndex(IndexedRDD.putPartitionFunc(partitionID,keyList),True)
+    print(results)
+    print(type(results))
+    #ctx.runJob(self, )
+    print("returned results!!!!!!!")
+    print(results.collect())
+    r2= IndexedRDD.updatable(results)
+    print(r2.collect())
+    print("returned results!!!!!!!")
+
+    return IndexedRDD(r2)
 
   def deleteFromIndex(self,keyList):
     delObj = self.indexedRDD.ctx.runJob(self, IndexedRDD.delFromPartitionFunc(keyList))
@@ -95,17 +103,34 @@ class IndexedRDD(RDD):
   @staticmethod
   def getPartitionFunc(keyList):
     def innerFunc(d):
+      d2 = dict((key,value) for key,value in d)
       for k,v in keyList:
-        d1 = {(value) for (key, value) in d if key == v}
+        d1 = {d2.has_key(v) and d2[v]}
       return (d1)
     return innerFunc
 
   @staticmethod
-  def putPartitionFunc(other):
-    def innerFunc(d):
-      for k,v in d:
-        d = {(key,v) for (key, value) in d if key == k}
-      return (d)
+  def putPartitionFunc(partitionID,keyList):
+    def innerFunc(index,d):
+      d1=[]
+      if(partitionID==index):
+        flag=False
+        for k,v in d:
+          if k == keyList[0]:
+            flag=True
+            d1.append((k,keyList[1]))
+          else:
+            d1.append((k,v))
+        
+        if not flag:
+          print("in if again!!")    
+          d1.append((keyList[0],keyList[1]))
+   
+      else:
+          for k,v in d:
+            d1.append((k, v))
+
+      return(d1)     
     return innerFunc
 
 
