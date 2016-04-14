@@ -16,11 +16,11 @@ def main():
 
 
 	print("GET1 Output *******************************************************")
-	list1=[(0,2)]
-	print(rdd_2.getFromIndex(list1))
+	print(rdd_2.getFromIndex(2))
 	print("GET1 Output *******************************************************")
 
 
+	
 	
 	print("PUT Output *******************************************************")
 	list1=(6,123)
@@ -37,31 +37,30 @@ def main():
 
 
 	print("DEL Output *******************************************************")
-	list1=[(0,7)]
-	rdd_6 = rdd_5.deleteFromIndex(list1)
+	rdd_6 = rdd_5.deleteFromIndex(7)
 	print(rdd_6.collect())
 	print(rdd_6.getNumPartitions())
-	print(rdd_6.getFromIndex([(0,7)]))
-	print("DEL Output *******************************************************")
+	print(rdd_6.getFromIndex(7))
+	print("DEL Output *******************************************************") 
 
-	"""print("Filter Output *******************************************************")
+	print("Filter Output *******************************************************")
 	rdd_7 = rdd_6.filter(lambda (x):(x[0]%2==0))
 	print(rdd_7.collect())
-	print("Filter Output *******************************************************")"""
+	print("Filter Output *******************************************************")
 
 	
 
 	print("Join Output *******************************************************")
-	rdd_7 = sc.parallelize(range(6,7)).map(lambda x:(x,x*x*x))
+	rdd_7 = sc.parallelize(range(6,9)).map(lambda x:(x,x*x*x))
 	rdd_8 = IndexedRDD.updatable(rdd_7)
 	print("RDD2 *******************************************************")
 	print(rdd_6.collect())
 	print(rdd_8.collect())
 	print("RDD8 *******************************************************")
-	rdd_9 = rdd_6.leftJoin(rdd_8,lambda (id,(a,b)):(id,(a,b)))
+	rdd_9 = rdd_6.fullOuterJoin(rdd_8,lambda (id,(a,b)):(id,(a,b)))
 	print(rdd_9.collect())
 	print(rdd_9.getNumPartitions())
-	print("Join Output *******************************************************")
+	print("Join Output *******************************************************") 
 
 	
 

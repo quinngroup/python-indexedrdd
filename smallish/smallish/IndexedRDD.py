@@ -6,6 +6,7 @@ from pyspark.serializers import NoOpSerializer, CartesianDeserializer, \
     BatchedSerializer, CloudPickleSerializer, PairDeserializer, \
     PickleSerializer, pack_long, AutoBatchedSerializer 
 import numpy as np
+import itertools
 
 
 
@@ -23,31 +24,17 @@ class IndexedRDD(RDD):
 
 #------------------------ Functionalities ---------------------------------------
 
-  def getFromIndex(self,keyList):
-    partitions=[]
-    for k,v in keyList:
-        partitions.append(self.getPartition(v))
-
-    results = self.indexedRDD.ctx.runJob(self, IndexedRDD.getPartitionFunc(keyList), partitions, True)
-    return results  
+  def getFromIndex(self,key):
+    return self.indexedRDD.lookup(key)  
 
   def putInIndex(self,keyList):
     partitionID=(self.getPartition(keyList[0]))
-
     results = self.indexedRDD.mapPartitionsWithIndex(IndexedRDD.putPartitionFunc(partitionID,keyList),True)
-    print(results)
-    print(type(results))
-    #ctx.runJob(self, )
-    print("returned results!!!!!!!")
-    print(results.collect())
-    r2= IndexedRDD.updatable(results)
-    print(r2.collect())
-    print("returned results!!!!!!!")
-
+    r2 = IndexedRDD.updatable(results)
     return IndexedRDD(r2)
 
-  def deleteFromIndex(self,keyList):
-    delObj = self.indexedRDD.ctx.runJob(self, IndexedRDD.delFromPartitionFunc(keyList))
+  def deleteFromIndex(self,key):
+    delObj = self.indexedRDD.ctx.runJob(self, IndexedRDD.delFromPartitionFunc(key))
     results = self.indexedRDD.ctx.parallelize((key,value) for (key,value) in delObj)
     return IndexedRDD(IndexedRDD.updatable(results))
 
@@ -114,31 +101,22 @@ class IndexedRDD(RDD):
     def innerFunc(index,d):
       d1=[]
       if(partitionID==index):
-        flag=False
-        for k,v in d:
-          if k == keyList[0]:
-            flag=True
-            d1.append((k,keyList[1]))
-          else:
-            d1.append((k,v))
-        
-        if not flag:
-          print("in if again!!")    
-          d1.append((keyList[0],keyList[1]))
-   
+        d1 = [item for item in itertools.ifilterfalse(lambda (k,v): (k==keyList[0]), d)]
+        d1.append((keyList[0],keyList[1]))
+      
       else:
-          for k,v in d:
-            d1.append((k, v))
+          return d
 
       return(d1)     
     return innerFunc
 
 
   @staticmethod
-  def delFromPartitionFunc(keyList):
+  def delFromPartitionFunc(key):
     def innerFunc(d):
-      for k,v in keyList:
-        d = {(key, value) for (key, value) in d if key != v}
+      #for k,v in keyList:
+      d = {item for item in itertools.ifilterfalse(lambda (k,v): (k==key), d)}
+        #d = {(key, value) for (key, value) in d if key != v}
       return (d)
     return innerFunc
 
