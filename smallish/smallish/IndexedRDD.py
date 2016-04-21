@@ -16,6 +16,7 @@ class IndexedRDD(RDD):
 #----------------------- Intialization Methods ---------------------------------
   #def __new__(self, rddObj):
   #self.indexedRDD = tempRDD
+  partitionMod = 1
   
   def __init__(self,rddObj):
     self.indexedRDD = rddObj
@@ -30,12 +31,12 @@ class IndexedRDD(RDD):
   def putInIndex(self,keyList):
     partitionID=(self.getPartition(keyList[0]))
     results = self.indexedRDD.mapPartitionsWithIndex(IndexedRDD.putPartitionFunc(partitionID,keyList),True)
-    r2 = IndexedRDD.updatable(results)
+    r2 = IndexedRDD.updatable(results,IndexedRDD.partitionMod)
     return IndexedRDD(r2)
 
   def deleteFromIndex(self,key):
     delObj = self.indexedRDD.ctx.runJob(self, IndexedRDD.delFromPartitionFunc(key))
-    results = self.indexedRDD.ctx.parallelize((key,value) for (key,value) in delObj)
+    results=self.indexedRDD.ctx.parallelize(delObj)
     return IndexedRDD(IndexedRDD.updatable(results))
 
   def filter(self,pred):   
@@ -63,14 +64,20 @@ class IndexedRDD(RDD):
 #------------------------ Static Methods ---------------------------------------
 
   @staticmethod
-  def updatable(rddObj): 
-    return IndexedRDD.updatable(self,lambda id, a: a,lambda id, a, b: b)
+  def updatable(rddObj,partitions): 
+    return IndexedRDD.updatable(self,partitions,lambda id, a: a,lambda id, a, b: b)
 
   @staticmethod  
-  def updatable(rddObj, z = lambda K, U : V, f = lambda K, V, U : V):
-    elemsPartitioned = rddObj.partitionBy(2)
-    partitions = elemsPartitioned.mapPartitionsWithIndex((IndexedRDD.makeMap),True)
-    return (partitions)
+  def updatable(rddObj,partitions, z = lambda K, U : V, f = lambda K, V, U : V):
+     #if rddObj.getNumPartitions() > 1:
+     #     elemsPartitioned = rddObj
+
+     #else:
+     elemsPartitioned = rddObj.partitionBy(partitions)
+     
+     IndexedRDD.partitionMod = partitions
+     partitions = elemsPartitioned.mapPartitionsWithIndex((IndexedRDD.makeMap),True)           
+     return (partitions)
 
   @staticmethod   
   def makeMap(index,kv):
@@ -85,7 +92,7 @@ class IndexedRDD(RDD):
 
   @staticmethod
   def getPartition(key):
-    return IndexedRDD.nonNegativeMod(hash(key),2)  
+    return IndexedRDD.nonNegativeMod(hash(key),IndexedRDD.partitionMod)  
   
   @staticmethod
   def getPartitionFunc(keyList):
@@ -103,9 +110,9 @@ class IndexedRDD(RDD):
       if(partitionID==index):
         d1 = [item for item in itertools.ifilterfalse(lambda (k,v): (k==keyList[0]), d)]
         d1.append((keyList[0],keyList[1]))
-      
+        
       else:
-          return d
+        return d
 
       return(d1)     
     return innerFunc
@@ -116,7 +123,6 @@ class IndexedRDD(RDD):
     def innerFunc(d):
       #for k,v in keyList:
       d = {item for item in itertools.ifilterfalse(lambda (k,v): (k==key), d)}
-        #d = {(key, value) for (key, value) in d if key != v}
       return (d)
     return innerFunc
 
