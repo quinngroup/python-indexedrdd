@@ -20,6 +20,8 @@ class IndexedRDD(RDD):
   
   def __init__(self,rddObj):
     self.indexedRDD = rddObj
+    #self.partitioner = rddObj.partitioner
+    #self.partitionCount = rddObj.getNumPartitions()
     super(IndexedRDD, self).__init__(self.indexedRDD._jrdd, self.indexedRDD.ctx)
     
 
@@ -29,53 +31,75 @@ class IndexedRDD(RDD):
     return self.indexedRDD.lookup(key)  
 
   def putInIndex(self,keyList):
-    partitionID=(self.getPartition(keyList[0]))
+    partitionID = self.indexedRDD.partitioner(keyList[0])
     results = self.indexedRDD.mapPartitionsWithIndex(IndexedRDD.putPartitionFunc(partitionID,keyList),True)
-    r2 = IndexedRDD.updatable(results,IndexedRDD.partitionMod)
+    print("tadadadddaddadadaadaddaddadadad")
+    print(results.collect())
+    print("tadadadddaddadadaadaddaddadadad")
+    r2 = IndexedRDD.updatable(results)
     return IndexedRDD(r2)
 
   def deleteFromIndex(self,key):
     delObj = self.indexedRDD.ctx.runJob(self, IndexedRDD.delFromPartitionFunc(key))
-    results=self.indexedRDD.ctx.parallelize(delObj)
-    return IndexedRDD(IndexedRDD.updatable(results))
+    results = self.indexedRDD.ctx.parallelize(delObj).partitionBy(self.getNumPartitions())
+    rddX = IndexedRDD.updatable(results)
+    return IndexedRDD(rddX)
 
   def filter(self,pred):   
     return self.mapIndexedRDDPartitions(pred)
   
   def mapIndexedRDDPartitions(self,f):
     newPartitionsRDD = self.indexedRDD.mapPartitions(lambda d: filter(f,d), True)
-    return IndexedRDD(newPartitionsRDD)
+    return IndexedRDD(IndexedRDD.updatable(newPartitionsRDD))
   
   def innerJoin(self,other,f): 
-    rddX=self.indexedRDD.join(other)
-    newPartitionsRDD = rddX.mapPartitions(IndexedRDD.filterOnPartitionFunc(f), True)
+    if (self.getNumPartitions()==other.getNumPartitions()) :
+      rddX=self.indexedRDD.join(other)
+    else:
+      otherX=other.partitionBy(self.getNumPartitions())
+      rddX=self.indexedRDD.join(otherX)
+
+    r2 = IndexedRDD.updatable(rddX)
+    newPartitionsRDD = r2.mapPartitions(IndexedRDD.filterOnPartitionFunc(f), True)
     return IndexedRDD(newPartitionsRDD)
   
   def leftJoin(self,other,f): 
-    rddX=self.indexedRDD.leftOuterJoin(other)
-    newPartitionsRDD = rddX.mapPartitions(IndexedRDD.filterOnPartitionFunc(f), True)
+    
+    if (self.getNumPartitions()==other.getNumPartitions()) :
+      rddX=self.indexedRDD.leftOuterJoin(other)
+    else:
+      otherX=other.partitionBy(self.getNumPartitions())
+      rddX=self.indexedRDD.leftOuterJoin(otherX)
+
+    r2 = IndexedRDD.updatable(rddX)
+    newPartitionsRDD = r2.mapPartitions(IndexedRDD.filterOnPartitionFunc(f), True)
     return IndexedRDD(newPartitionsRDD)
   
   def fullOuterJoin(self,other,f): 
-    rddX=self.indexedRDD.fullOuterJoin(other)
-    newPartitionsRDD = rddX.mapPartitions(IndexedRDD.filterOnPartitionFunc(f), True)
+    if (self.getNumPartitions()==other.getNumPartitions()) :
+      rddX=self.indexedRDD.fullOuterJoin(other)
+    else:
+      otherX=other.partitionBy(self.getNumPartitions())
+      rddX=self.indexedRDD.fullOuterJoin(otherX)
+
+    r2 = IndexedRDD.updatable(rddX)  
+    newPartitionsRDD = r2.mapPartitions(IndexedRDD.filterOnPartitionFunc(f), True)
     return IndexedRDD(newPartitionsRDD)
   
 #------------------------ Static Methods ---------------------------------------
 
   @staticmethod
-  def updatable(rddObj,partitions): 
-    return IndexedRDD.updatable(self,partitions,lambda id, a: a,lambda id, a, b: b)
+  def updatable(rddObj): 
+    return IndexedRDD.updatable(self,lambda id, a: a,lambda id, a, b: b)
 
   @staticmethod  
-  def updatable(rddObj,partitions, z = lambda K, U : V, f = lambda K, V, U : V):
-     #if rddObj.getNumPartitions() > 1:
-     #     elemsPartitioned = rddObj
-
-     #else:
-     elemsPartitioned = rddObj.partitionBy(partitions)
+  def updatable(rddObj, z = lambda K, U : V, f = lambda K, V, U : V):
+     if rddObj.partitioner is not None:
+          elemsPartitioned = rddObj
+     else:
+          elemsPartitioned = rddObj.partitionBy(rddObj.getNumPartitions())
      
-     IndexedRDD.partitionMod = partitions
+     IndexedRDD.partitionMod = elemsPartitioned.getNumPartitions()
      partitions = elemsPartitioned.mapPartitionsWithIndex((IndexedRDD.makeMap),True)           
      return (partitions)
 
@@ -110,7 +134,7 @@ class IndexedRDD(RDD):
       if(partitionID==index):
         d1 = [item for item in itertools.ifilterfalse(lambda (k,v): (k==keyList[0]), d)]
         d1.append((keyList[0],keyList[1]))
-        
+       
       else:
         return d
 
