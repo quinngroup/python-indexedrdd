@@ -71,8 +71,7 @@ class IndexedRDD(RDD):
   def deleteFromIndex(self,key):
     partitionID = self.indexedRDD.partitioner(key)
     results = self.indexedRDD.mapPartitionsWithIndex(IndexedRDD.delFromPartitionFunc(partitionID,key),True)
-    r2 = IndexedRDD.updatable(results)
-    return IndexedRDD(r2)
+    return IndexedRDD(results)
 
   def filter(self,pred):   
     return self.mapIndexedRDDPartitions(pred)
@@ -198,15 +197,12 @@ class IndexedRDD(RDD):
   @staticmethod
   def delFromPartitionFunc(partitionID,key):
     def innerFunc(index,d):
-      d1=[]
-      if(partitionID==index):
-        d2=dict(d)
-        del d2[key]
-        d1=d2.items()
-      else:
-        return d
+       if(partitionID==index):
+        y=MyHashMap(d.x[0])
+        y=y.delete(key)
+        d.x[0]=y
 
-      return(d1)     
+       return(d)     
     return innerFunc
 
   @staticmethod
@@ -259,25 +255,24 @@ def main():
   """print(rdd_4.take(2))
   print(rdd_4.getNumPartitions())
   #print(rdd_4.getFromIndex(6))
-  print("PUT Output *******************************************************")
+  print("PUT Output *******************************************************")"""
   
 
-
-  print("DEL Output *******************************************************")
-  rdd_6 = rdd_4.deleteFromIndex(7)
+  """print("DEL Output *******************************************************")
+  rdd_6 = rdd_2.deleteFromIndex(7)
   #print(rdd_6.collect())
   print(rdd_6.getNumPartitions())
   #print(rdd_6.getFromIndex(7))
-  #print(rdd_6.collect())
-  print("DEL Output *******************************************************") 
+  print(rdd_6.collect())
+  print("DEL Output *******************************************************")""" 
 
-  print("Filter Output *******************************************************")
+  """print("Filter Output *******************************************************")
   #print(rdd_6.collect())
-  rdd_7 = rdd_6.filter(lambda (x):(x[0]%2==0))
-  #print(rdd_7.collect())
-  print("Filter Output *******************************************************")
+  rdd_7 = rdd_2.filter(lambda (x):(x[0]%2==0))
+  print(rdd_7.collect())
+  print("Filter Output *******************************************************")"""
 
-  print("Join Output *******************************************************")
+  """print("Join Output *******************************************************")
   rdd_7 = sc.parallelize(range(1,100)).map(lambda x:(x,x*x*x))
   rdd_8 = IndexedRDD.updatable(rdd_7.partitionBy(5))
   rdd_81 = IndexedRDD(rdd_8)

@@ -29,8 +29,11 @@ class MyHashMap:
    			del self.x[keyList[0]]
 
    		self.x[keyList[0]]=keyList[1]	
-   		print("printing from MyHashMap")
    		return (self)
-   		print("printing from MyHashMap")
+   		
+	def delete(self,keyList):
+   		if (keyList in self.x):	
+   			del self.x[keyList]
 
-        
+   		return (self)
+   		
