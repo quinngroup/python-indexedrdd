@@ -30,38 +30,8 @@ class IndexedRDD(RDD):
 #------------------------ Functionalities ---------------------------------------
 
   def getFromIndex(self,key):
-
-    #print(time.time() ,  " Time before finding the partitionID")
-    #partitionID = self.indexedRDD.partitioner(key)
-    #print(time.time() ,  " Time after finding the partitionID")
-
-    #print(time.time() ,  " Time before executing runJob")
-    #results = self.indexedRDD.ctx.runJob(self,IndexedRDD.getPartitionFunc(key),[0],True)
-    #print("before mapPartitions")
-    #print(self.indexedRDD.getNumPartitions())
-    #print(partitionID)
-    #partitions = self.indexedRDD.mapPartitionsWithIndex((lambda x,y : IndexedRDD.myFunc(x,y)),True) 
-    #print("after mapPartitions")
-    #print(type(self.indexedRDD[0]))
-    #results = self.indexedRDD.ctx.runJob(self,(lambda x:IndexedRDD.myFunc(x)))
     results = self.indexedRDD.ctx.runJob(self,IndexedRDD.getPartitionFunc(key),[0],True)
-    return (self.indexedRDD.lookup(key))
-
-  @staticmethod
-  def myFunc(iter1):
-    z = MyList(iter1)
-    print ("xxxxxxxxxxxxx1")
-    print(type(z))
-    print(z.x)
-    print(len(z.x))
-    y=MyHashMap(z.x[0])
-    print(y)
-    print(type(y))
-    print ("xxxxxxxxxxxxx2")
-    print ("TYPE OF ITER1!!!!!!!!!!")
-    print ("TYPE OF ITER1!!!!!!!!!!",type(iter1))
-    x = z.next()
-    print(x)
+    return (results)
 
   def putInIndex(self,keyList):
     partitionID = self.indexedRDD.partitioner(keyList[0])
@@ -129,9 +99,6 @@ class IndexedRDD(RDD):
      
      #IndexedRDD.partitionMod = elemsPartitioned.getNumPartitions()
      partitions = elemsPartitioned.mapPartitions((lambda iter1 : MyList(MyHashMap(iter1))),True) 
-     print("partitions after makeMap type")
-     print(type(partitions))          
-     print("partitions after makeMap type")
      return (partitions)
 
   @staticmethod
@@ -162,23 +129,9 @@ class IndexedRDD(RDD):
   @staticmethod
   def getPartitionFunc(keyList):
     def innerFunc(partIter):
-      """print("printing partIter type!!!!",type(partIter))
-      print("printing partIter type!!!!",(partIter))
-      for i in partIter:
-        print ("for: ",i)
-
-      part = partIter.next()
-      print("printing part!!!!!!!!!!!!!!!!!!!!!!!",part)
-      d1=part.get(keyList)"""
       z = MyList(partIter)
-      print ("xxxxxxxxxxxxx1")
-      print(type(z))
-      print(z.x)
-      print(len(z.x))
-      y=MyHashMap(z.x[0])
+      y = MyHashMap(z.x[0])
       d1 = y.x[keyList]
-
-
       return [d1]
     return innerFunc
 
@@ -218,7 +171,7 @@ def main():
   sc = SparkContext("local", "Simple App")
   
   print("Class initialization *******************************************************")
-  rdd_1 = sc.parallelize(range(20)).map(lambda x: (x, x*x))
+  rdd_1 = sc.parallelize(range(100000)).map(lambda x: (x, x*x))
   rdd_12 = rdd_1.partitionBy(5)
   
 
@@ -230,16 +183,18 @@ def main():
   rdd_2 = IndexedRDD(rdd_11)
   
   #print("Before call to collect()")
-  #print(rdd_2.collect())
+  print(rdd_2.take(1))
   #print("After call to collect()")
   #print("Before call to take()")
   #print(rdd_2.take(1))
   #print("After call to take")
  
 
-  #print("Before GET Output *******************************************************")
-  #print(rdd_2.getFromIndex(15))
-  #print("After GET Output *******************************************************")
+  print("Before GET Output *******************************************************")
+  print(time.time() ,  " Time before get")
+  print(rdd_2.getFromIndex(15))
+  print(time.time() ,  " Time after get")
+  print("After GET Output *******************************************************")
   
     
   
@@ -272,24 +227,20 @@ def main():
   print(rdd_7.collect())
   print("Filter Output *******************************************************")"""
 
-  """print("Join Output *******************************************************")
-  rdd_7 = sc.parallelize(range(1,100)).map(lambda x:(x,x*x*x))
+  """ print("Join Output *******************************************************")
+  rdd_7 = sc.parallelize(range(10,21)).map(lambda x:(x,x*x*x))
   rdd_8 = IndexedRDD.updatable(rdd_7.partitionBy(5))
   rdd_81 = IndexedRDD(rdd_8)
   
   print(type(rdd_81))
   
-  rdd_9 = rdd_2.innerJoin(rdd_81,lambda (id,(a,b)):(id,(a,b)))
- # print(rdd_9.collect())
+  rdd_9 = rdd_2.leftJoin(rdd_81,lambda (id,(a,b)):(id,(a,b)))
+  print(rdd_9.collect())
   print(rdd_9.getNumPartitions())
   print("Join Output *******************************************************")
  # print(rdd_9.getFromIndex(5))"""
   
-"""
-print(time.time() ,  " dtsrsrsrsrrsrsrrsrsrs")
-rdd_1.filter(lambda (x,y): x==2).collect()
-print(time.time() , "endndnndndnnndnenen")
-"""
+
      
 
 if __name__ == "__main__":

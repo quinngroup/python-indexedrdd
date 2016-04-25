@@ -8,8 +8,7 @@ class MyHashMap:
 		
 		self.x = d1
 		self.count = 0
-		print(self.x)
-
+		
     
 	def __iter__(self):
 		return(self.x.iteritems())
