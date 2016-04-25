@@ -7,8 +7,10 @@ from pyspark.serializers import NoOpSerializer, CartesianDeserializer, \
     PickleSerializer, pack_long, AutoBatchedSerializer 
 import numpy as np
 import itertools
-
-
+import time
+from blist import *
+from MyHashMap import MyHashMap
+from MyList import MyList
 
 
 class IndexedRDD(RDD):
@@ -28,22 +30,49 @@ class IndexedRDD(RDD):
 #------------------------ Functionalities ---------------------------------------
 
   def getFromIndex(self,key):
-    return self.indexedRDD.lookup(key)  
+
+    #print(time.time() ,  " Time before finding the partitionID")
+    #partitionID = self.indexedRDD.partitioner(key)
+    #print(time.time() ,  " Time after finding the partitionID")
+
+    #print(time.time() ,  " Time before executing runJob")
+    #results = self.indexedRDD.ctx.runJob(self,IndexedRDD.getPartitionFunc(key),[0],True)
+    #print("before mapPartitions")
+    #print(self.indexedRDD.getNumPartitions())
+    #print(partitionID)
+    #partitions = self.indexedRDD.mapPartitionsWithIndex((lambda x,y : IndexedRDD.myFunc(x,y)),True) 
+    #print("after mapPartitions")
+    #print(type(self.indexedRDD[0]))
+    #results = self.indexedRDD.ctx.runJob(self,(lambda x:IndexedRDD.myFunc(x)))
+    results = self.indexedRDD.ctx.runJob(self,IndexedRDD.getPartitionFunc(key),[0],True)
+    return (self.indexedRDD.lookup(key))
+
+  @staticmethod
+  def myFunc(iter1):
+    z = MyList(iter1)
+    print ("xxxxxxxxxxxxx1")
+    print(type(z))
+    print(z.x)
+    print(len(z.x))
+    y=MyHashMap(z.x[0])
+    print(y)
+    print(type(y))
+    print ("xxxxxxxxxxxxx2")
+    print ("TYPE OF ITER1!!!!!!!!!!")
+    print ("TYPE OF ITER1!!!!!!!!!!",type(iter1))
+    x = z.next()
+    print(x)
 
   def putInIndex(self,keyList):
     partitionID = self.indexedRDD.partitioner(keyList[0])
     results = self.indexedRDD.mapPartitionsWithIndex(IndexedRDD.putPartitionFunc(partitionID,keyList),True)
-    print("tadadadddaddadadaadaddaddadadad")
-    print(results.collect())
-    print("tadadadddaddadadaadaddaddadadad")
-    r2 = IndexedRDD.updatable(results)
-    return IndexedRDD(r2)
+    return IndexedRDD(results)
 
   def deleteFromIndex(self,key):
-    delObj = self.indexedRDD.ctx.runJob(self, IndexedRDD.delFromPartitionFunc(key))
-    results = self.indexedRDD.ctx.parallelize(delObj).partitionBy(self.getNumPartitions())
-    rddX = IndexedRDD.updatable(results)
-    return IndexedRDD(rddX)
+    partitionID = self.indexedRDD.partitioner(key)
+    results = self.indexedRDD.mapPartitionsWithIndex(IndexedRDD.delFromPartitionFunc(partitionID,key),True)
+    r2 = IndexedRDD.updatable(results)
+    return IndexedRDD(r2)
 
   def filter(self,pred):   
     return self.mapIndexedRDDPartitions(pred)
@@ -99,13 +128,26 @@ class IndexedRDD(RDD):
      else:
           elemsPartitioned = rddObj.partitionBy(rddObj.getNumPartitions())
      
-     IndexedRDD.partitionMod = elemsPartitioned.getNumPartitions()
-     partitions = elemsPartitioned.mapPartitionsWithIndex((IndexedRDD.makeMap),True)           
+     #IndexedRDD.partitionMod = elemsPartitioned.getNumPartitions()
+     partitions = elemsPartitioned.mapPartitions((lambda iter1 : MyList(MyHashMap(iter1))),True) 
+     print("partitions after makeMap type")
+     print(type(partitions))          
+     print("partitions after makeMap type")
      return (partitions)
+
+  @staticmethod
+  def createIter(object):
+    list1=[]
+    list1.append(object)
+    return list1
 
   @staticmethod   
   def makeMap(index,kv):
-    mapObject = ((k,v) for (k,v) in kv)
+    
+    mapObject = ({k:v} for k,v in kv)
+    #x=iter(mapObject)
+    #lst.append(mapObject)
+    print(mapObject)
     return (mapObject)
 
   @staticmethod  
@@ -120,34 +162,51 @@ class IndexedRDD(RDD):
   
   @staticmethod
   def getPartitionFunc(keyList):
-    def innerFunc(d):
-      d2 = dict((key,value) for key,value in d)
-      for k,v in keyList:
-        d1 = {d2.has_key(v) and d2[v]}
-      return (d1)
+    def innerFunc(partIter):
+      """print("printing partIter type!!!!",type(partIter))
+      print("printing partIter type!!!!",(partIter))
+      for i in partIter:
+        print ("for: ",i)
+
+      part = partIter.next()
+      print("printing part!!!!!!!!!!!!!!!!!!!!!!!",part)
+      d1=part.get(keyList)"""
+      z = MyList(partIter)
+      print ("xxxxxxxxxxxxx1")
+      print(type(z))
+      print(z.x)
+      print(len(z.x))
+      y=MyHashMap(z.x[0])
+      d1 = y.x[keyList]
+
+
+      return [d1]
     return innerFunc
 
   @staticmethod
   def putPartitionFunc(partitionID,keyList):
     def innerFunc(index,d):
-      d1=[]
       if(partitionID==index):
-        d1 = [item for item in itertools.ifilterfalse(lambda (k,v): (k==keyList[0]), d)]
-        d1.append((keyList[0],keyList[1]))
-       
-      else:
-        return d
-
-      return(d1)     
+        y=MyHashMap(d.x[0])
+        y=y.put(keyList)
+        d.x[0]=y
+        
+      return(d)     
     return innerFunc
 
 
   @staticmethod
-  def delFromPartitionFunc(key):
-    def innerFunc(d):
-      #for k,v in keyList:
-      d = {item for item in itertools.ifilterfalse(lambda (k,v): (k==key), d)}
-      return (d)
+  def delFromPartitionFunc(partitionID,key):
+    def innerFunc(index,d):
+      d1=[]
+      if(partitionID==index):
+        d2=dict(d)
+        del d2[key]
+        d1=d2.items()
+      else:
+        return d
+
+      return(d1)     
     return innerFunc
 
   @staticmethod
@@ -158,5 +217,87 @@ class IndexedRDD(RDD):
     return innerFunc
 
 
+def main():
+
+  sc = SparkContext("local", "Simple App")
+  
+  print("Class initialization *******************************************************")
+  rdd_1 = sc.parallelize(range(20)).map(lambda x: (x, x*x))
+  rdd_12 = rdd_1.partitionBy(5)
+  
+
+  #print(time.time() ,  " Time before creating list of dictionaries")
+  rdd_11 = IndexedRDD.updatable(rdd_12)
+  #print(time.time() ,  " Time after creating list of dictionaries")
+  print("Class initialization *******************************************************")
+
+  rdd_2 = IndexedRDD(rdd_11)
+  
+  #print("Before call to collect()")
+  #print(rdd_2.collect())
+  #print("After call to collect()")
+  #print("Before call to take()")
+  #print(rdd_2.take(1))
+  #print("After call to take")
+ 
+
+  #print("Before GET Output *******************************************************")
+  #print(rdd_2.getFromIndex(15))
+  #print("After GET Output *******************************************************")
+  
+    
+  
+
+  
+  """print("PUT Output *******************************************************")
+  list1=(25,123)
+  rdd_4 = rdd_2.putInIndex(list1).cache()
+  print (rdd_4.collect())
+  print (rdd_4.getNumPartitions())
+  print("PUT Output *******************************************************")"""
+
+  """print(rdd_4.take(2))
+  print(rdd_4.getNumPartitions())
+  #print(rdd_4.getFromIndex(6))
+  print("PUT Output *******************************************************")
+  
+
+
+  print("DEL Output *******************************************************")
+  rdd_6 = rdd_4.deleteFromIndex(7)
+  #print(rdd_6.collect())
+  print(rdd_6.getNumPartitions())
+  #print(rdd_6.getFromIndex(7))
+  #print(rdd_6.collect())
+  print("DEL Output *******************************************************") 
+
+  print("Filter Output *******************************************************")
+  #print(rdd_6.collect())
+  rdd_7 = rdd_6.filter(lambda (x):(x[0]%2==0))
+  #print(rdd_7.collect())
+  print("Filter Output *******************************************************")
+
+  print("Join Output *******************************************************")
+  rdd_7 = sc.parallelize(range(1,100)).map(lambda x:(x,x*x*x))
+  rdd_8 = IndexedRDD.updatable(rdd_7.partitionBy(5))
+  rdd_81 = IndexedRDD(rdd_8)
+  
+  print(type(rdd_81))
+  
+  rdd_9 = rdd_2.innerJoin(rdd_81,lambda (id,(a,b)):(id,(a,b)))
+ # print(rdd_9.collect())
+  print(rdd_9.getNumPartitions())
+  print("Join Output *******************************************************")
+ # print(rdd_9.getFromIndex(5))"""
+  
+"""
+print(time.time() ,  " dtsrsrsrsrrsrsrrsrsrs")
+rdd_1.filter(lambda (x,y): x==2).collect()
+print(time.time() , "endndnndndnnndnenen")
+"""
+     
+
+if __name__ == "__main__":
+  main()
     
   
