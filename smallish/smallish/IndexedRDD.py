@@ -21,6 +21,21 @@ class IndexedRDD(RDD):
     #self.partitioner = rddObj.partitioner
     #self.partitionCount = rddObj.getNumPartitions()
     super(IndexedRDD, self).__init__(self.indexedRDD._jrdd, self.indexedRDD.ctx)
+
+
+  @staticmethod
+  def updatable(rddObj): 
+    return IndexedRDD.updatable(lambda id, a: a,lambda id, a, b: b)
+
+  @staticmethod  
+  def updatable(rddObj, z = lambda K, U : V, f = lambda K, V, U : V):
+     if rddObj.partitioner is not None:
+          elemsPartitioned = rddObj
+     else:
+          elemsPartitioned = rddObj.partitionBy(rddObj.getNumPartitions())
+     
+     partitions = elemsPartitioned.mapPartitions((lambda elementsIter : DictList(DictPartition(elementsIter))),True) 
+     return (partitions)
     
 
 #------------------------ Functionalities ---------------------------------------
@@ -135,23 +150,6 @@ class IndexedRDD(RDD):
       d = {f(i) for i in d }
       return d
     return innerFunc
-
-  
-#------------------------ Static Methods ---------------------------------------
-
-  @staticmethod
-  def updatable(rddObj): 
-    return IndexedRDD.updatable(lambda id, a: a,lambda id, a, b: b)
-
-  @staticmethod  
-  def updatable(rddObj, z = lambda K, U : V, f = lambda K, V, U : V):
-     if rddObj.partitioner is not None:
-          elemsPartitioned = rddObj
-     else:
-          elemsPartitioned = rddObj.partitionBy(rddObj.getNumPartitions())
-     
-     partitions = elemsPartitioned.mapPartitions((lambda elementsIter : DictList(DictPartition(elementsIter))),True) 
-     return (partitions)
 
 
 def main():
