@@ -15,12 +15,9 @@ from DictList import DictList
 class IndexedRDD(RDD):
  
 #----------------------- Intialization Methods ---------------------------------
-  #def __new__(self, rddObj):
-  #self.indexedRDD = tempRDD
-  #partitionMod = 1
-  
   def __init__(self,rddObj):
-    self.indexedRDD = rddObj
+    updatedRDD = IndexedRDD.updatable(rddObj)
+    self.indexedRDD = updatedRDD
     #self.partitioner = rddObj.partitioner
     #self.partitionCount = rddObj.getNumPartitions()
     super(IndexedRDD, self).__init__(self.indexedRDD._jrdd, self.indexedRDD.ctx)
@@ -164,8 +161,7 @@ def main():
   print("Class initialization *******************************************************")
   initRdd = sc.parallelize(range(100000)).map(lambda x: (x, x*x))
   partitionedRDD = initRdd.partitionBy(5)
-  indexedRDD = IndexedRDD.updatable(partitionedRDD)
-  indexedRDD1 = IndexedRDD(indexedRDD)
+  indexedRDD1 = IndexedRDD(partitionedRDD)
   print(indexedRDD1.take(1))
   print("Class initialization *******************************************************")
 
