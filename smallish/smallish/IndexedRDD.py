@@ -141,7 +141,7 @@ class IndexedRDD(RDD):
 
   @staticmethod
   def updatable(rddObj): 
-    return IndexedRDD.updatable(self,lambda id, a: a,lambda id, a, b: b)
+    return IndexedRDD.updatable(lambda id, a: a,lambda id, a, b: b)
 
   @staticmethod  
   def updatable(rddObj, z = lambda K, U : V, f = lambda K, V, U : V):
