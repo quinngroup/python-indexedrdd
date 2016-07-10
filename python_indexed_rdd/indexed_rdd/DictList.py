@@ -1,16 +1,21 @@
-"""
-Wrapper class to wrap the objects
-of dictionary
-"""
-
+"""A wrapper class"""
 
 class DictList:
+	"""
+	Wrapper for dictionary objects
+	"""
 
-    def __init__(self, dictPartitionList):
-        self.dictPartitionList = list()
-        self.dictPartitionList.append(dictPartitionList)
+	def __init__(self, dict_partition_list):
+		"""
+		Appends dictionary items to list
+		"""
+		self.dict_partition_list = list()
+		self.dict_partition_list.append(dict_partition_list)
 
-    # Iterator which invokes the iterator of the enclosing dictionary and
-    # returns [(key1,value1),(key2,value2)] pairs
-    def __iter__(self):
-        return(self.dictPartitionList[0].__iter__())
+	def __iter__(self):
+		"""
+		Invokes the iterator of the enclosing dictionary
+		Returns:
+			[(key1,value1),(key2,value2)] pairs.
+		"""
+		return self.dict_partition_list[0].__iter__()
