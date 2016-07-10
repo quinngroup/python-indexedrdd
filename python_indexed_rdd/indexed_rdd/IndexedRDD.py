@@ -1,5 +1,5 @@
 """
-Base Class with having all the functions
+Base Class having all the functions
 of IndexedRDD
 """
 import itertools
