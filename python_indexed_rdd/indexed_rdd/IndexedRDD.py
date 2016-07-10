@@ -8,8 +8,8 @@ from pyspark.serializers import NoOpSerializer, CartesianDeserializer, \
 import numpy as np
 import itertools
 import time
-from DictPartition import DictPartition
-from DictList import DictList
+from indexed_rdd import DictPartition
+from indexed_rdd import DictList
 
 
 class IndexedRDD(RDD):

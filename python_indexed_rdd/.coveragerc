@@ -1,0 +1,7 @@
+[run]
+branch = True
+source = smallish/*
+include = smallish/*
+omit = */setup.py
+[report]
+include = smallish/*
