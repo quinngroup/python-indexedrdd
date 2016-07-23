@@ -54,4 +54,5 @@ VERSION = __version__
 PACKAGES = ['indexed_rdd',
             'indexed_rdd.tests']
 PACKAGE_DATA = {'indexed_rdd': [pjoin('data', '*')]}
-REQUIRES = ["numpy"]
+REQUIRES = ["numpy","pytest"]
+
