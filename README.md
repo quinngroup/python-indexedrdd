@@ -12,8 +12,6 @@ Since, Python IndexedRDD isn't published as a package, download the folder to a 
 
 For example:
 ```
-curl --location --remote-name "https://github.com/quinngroup/python-indexedrdd.git" 
-curl -sL https://github.com/quinngroup/python-indexedrdd/archive/master.zip
 wget https://github.com/quinngroup/python-indexedrdd/archive/master.zip -O python-indexedrdd.zip
 unzip -q python-indexedrdd.zip
 cd python-indexedrdd-master/
