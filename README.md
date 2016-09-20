@@ -1,12 +1,11 @@
 # Python IndexedRDD
 
-IndexedRDD extends RDD[(K, V)] and pre-indexes the entries imposing unique keys to facilitate efficient point lookups, updates and deletion. It: 
+IndexedRDD extends RDD[(K, V)] and pre-indexes the entries, imposing unique keys to facilitate efficient point lookups, updates and deletion. It: 
 * hash-partitions the entries based on the keys
-* follows a dictionary structure within wacg partition
+* supports only long keys
+* follows a dictionary structure within each partition
 
 # Installation
-
-Before using IndexedRDD, take a quick look at the license and make sure you're OK with their terms.
 
 Since, Python IndexedRDD isn't published as a package, download the folder to a location of your choice, and run the setup.py inside.
 
