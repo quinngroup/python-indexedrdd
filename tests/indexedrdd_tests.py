@@ -68,3 +68,12 @@ def test_filter(spark_context):
 	wrong_results = [ (0,0), (4,16), (1,1), (3,9)]
 	assert actual_results == expected_results
 	assert actual_results != wrong_results
+
+def test_filter(spark_context):
+	rdd0 = spark_context.parallelize(range(5)).map(lambda x: (x, x*x))
+	rdd1 = IndexedRDD(rdd0).cache()
+	actual_results = rdd1.filter(lambda (x):(x[0]==2)).collect()
+	expected_results = [(2,4)]
+	wrong_results = [ (0,0), (4,16), (1,1), (3,9)]
+	assert actual_results == expected_results
+	assert actual_results != wrong_results			
