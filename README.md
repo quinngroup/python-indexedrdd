@@ -56,4 +56,7 @@ if __name__ == "__main__":
 
 ```
 
+# Acknowledgements
+
+* [amplab/spark-indexedrdd](https://github.com/amplab/spark-indexedrdd): This package is developed in Scala and served as an essential resource.
 
